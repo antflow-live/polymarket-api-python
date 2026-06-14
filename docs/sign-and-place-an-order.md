@@ -1,6 +1,6 @@
 # Sign and place an order
 
-This toolkit does **not** implement order signing. EIP-712 order signing is security-critical and changes whenever Polymarket revises its exchange contracts, so the order layer is a thin wrapper over Polymarket's official, audited `py_clob_client_v2` — which does all the signing. You provide the inputs and a securely-loaded key; the official client signs and submits.
+This toolkit does **not** implement order signing. EIP-712 order signing is security-critical and changes whenever Polymarket revises its exchange contracts, so the order layer is a thin wrapper over Polymarket's official, audited **py-clob-client** (the `py_clob_client_v2` package) — which does all the signing. You provide the inputs and a securely-loaded key; the official client signs and submits.
 
 ```bash
 pip install "polymarket-api-python[trading]"

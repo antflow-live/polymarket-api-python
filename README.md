@@ -1,6 +1,6 @@
 # Polymarket API client for Python
 
-A small, typed Python toolkit for the [Polymarket](https://polymarket.com) API. Read markets from the **Gamma** API, snapshot and **stream the CLOB order book**, generate idempotent client order ids, and place orders through Polymarket's official client.
+A small, typed Python toolkit for the [Polymarket](https://polymarket.com) API. Read markets from the **Gamma** API, snapshot and **stream the Polymarket CLOB order book**, generate idempotent client order ids, and place orders through Polymarket's official client (`py-clob-client`).
 
 It wraps Polymarket's **public** CLOB and Gamma APIs. The read / stream / analytics surface needs only `httpx` and `websockets` and **no API key**. Order placement is opt-in.
 

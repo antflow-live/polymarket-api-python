@@ -1,14 +1,16 @@
-"""Print an order-book snapshot for the busiest market's YES token. Read-only.
+"""Print an order-book snapshot for an active market's YES token. Read-only.
 
     python examples/orderbook_snapshot.py
 """
+
+from _common import pick_tradeable_market
 
 from polymarket_api import GammaClient, fetch_order_book
 
 
 def main() -> None:
     with GammaClient() as gamma:
-        market = next(iter(gamma.iter_markets(max_markets=1)))
+        market = pick_tradeable_market(gamma)
 
     token_id = market.yes_token_id
     if not token_id:

@@ -1,4 +1,4 @@
-"""Stream live price changes for the busiest market. Read-only, no credentials.
+"""Stream live price changes for an active market. Read-only, no credentials.
 
     python examples/stream_prices.py
 
@@ -6,6 +6,8 @@ Press Ctrl-C to stop.
 """
 
 import asyncio
+
+from _common import pick_tradeable_market
 
 from polymarket_api import (
     BookUpdate,
@@ -18,7 +20,7 @@ from polymarket_api import (
 
 async def main() -> None:
     with GammaClient() as gamma:
-        market = next(iter(gamma.iter_markets(max_markets=1)))
+        market = pick_tradeable_market(gamma)
 
     token_ids = [t for t in (market.yes_token_id, market.no_token_id) if t]
     if not token_ids:

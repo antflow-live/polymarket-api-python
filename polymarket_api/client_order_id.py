@@ -8,6 +8,14 @@ genuinely new order gets a fresh one.
 
 The id is a hex digest truncated to 32 chars, which fits comfortably inside the
 CLOB's 64-char limit.
+
+The one rule: the inputs must *uniquely identify the intended placement*. Two
+different orders that happen to share an input (e.g. the same strategy id and
+token but a different leg or attempt) must differ in at least one part, or the
+second is silently treated as a duplicate of the first. And if your attempt
+counter can reset across process restarts, mix in a per-run nonce — otherwise a
+regenerated id can collide with a stale, partially-filled order from before the
+restart. See ``docs/cancel-and-replace.md``.
 """
 
 from __future__ import annotations

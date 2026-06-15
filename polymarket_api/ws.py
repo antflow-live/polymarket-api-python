@@ -35,6 +35,7 @@ from __future__ import annotations
 import asyncio
 import inspect
 import json
+import logging
 import time
 from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable, Union
@@ -42,6 +43,8 @@ from typing import Any, Awaitable, Callable, Union
 import websockets
 
 from .constants import CLOB_WS_URL
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Typed events
@@ -237,7 +240,11 @@ class ClobWebSocketClient:
         """
         tokens = list(token_ids)[: self._max_tokens]
         if len(token_ids) > self._max_tokens:
-            tokens = token_ids[: self._max_tokens]
+            logger.warning(
+                "subscribing to the first %d of %d tokens (per-connection cap)",
+                self._max_tokens,
+                len(token_ids),
+            )
         self._running = True
         reconnect_attempts = 0
 
@@ -262,9 +269,14 @@ class ClobWebSocketClient:
                     watchdog_task = asyncio.create_task(self._stale_watchdog(ws))
 
                     await self._message_loop(ws, on_event)
-            except (OSError, websockets.exceptions.WebSocketException):
+            except (OSError, websockets.exceptions.WebSocketException) as exc:
                 # Connection dropped / refused — fall through to backoff.
-                pass
+                logger.warning("CLOB websocket disconnected: %s", exc)
+            except Exception:
+                # Any other unexpected error must reconnect, never escape and
+                # kill the feed. asyncio.CancelledError is a BaseException, so
+                # stop()/task cancellation still propagates past this clause.
+                logger.exception("unexpected CLOB websocket error; reconnecting")
             finally:
                 for task in (ping_task, watchdog_task):
                     if task and not task.done():
@@ -277,6 +289,7 @@ class ClobWebSocketClient:
                 self._reconnect_base * (2**reconnect_attempts), self._reconnect_max
             )
             reconnect_attempts += 1
+            logger.info("reconnecting to CLOB websocket in %.1fs", backoff)
             await asyncio.sleep(backoff)
 
     async def stop(self) -> None:
@@ -302,12 +315,18 @@ class ClobWebSocketClient:
                 if not isinstance(item, dict):
                     continue
                 self._last_data_ts = time.monotonic()
-                event = parse_event(item)
-                if event is None:
-                    continue
-                result = on_event(event)
-                if inspect.isawaitable(result):
-                    await result
+                # Isolate parsing and the user's handler: one bad event or a
+                # throwing handler must not drop the connection. (CancelledError
+                # is a BaseException, so stop()/cancellation still propagates.)
+                try:
+                    event = parse_event(item)
+                    if event is None:
+                        continue
+                    result = on_event(event)
+                    if inspect.isawaitable(result):
+                        await result
+                except Exception:
+                    logger.exception("error handling market event; skipping")
 
     async def _ping_loop(self, ws: Any) -> None:
         while self._running:

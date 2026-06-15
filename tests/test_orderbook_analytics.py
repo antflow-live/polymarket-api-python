@@ -60,3 +60,26 @@ def test_empty_book_is_safe():
     assert snap.best_ask is None
     assert snap.spread is None
     assert snap.bid_depth_5pct == 0.0
+
+
+def test_market_metadata_fields_parsed():
+    snap = parse_order_book(
+        "tok",
+        {
+            "bids": [{"price": "0.40", "size": "10"}],
+            "asks": [{"price": "0.45", "size": "5"}],
+            "tick_size": "0.01",
+            "min_order_size": "5",
+            "neg_risk": True,
+        },
+    )
+    assert snap.tick_size == "0.01"
+    assert snap.min_order_size == 5.0
+    assert snap.neg_risk is True
+
+
+def test_market_metadata_absent_is_none():
+    snap = parse_order_book("tok", {"bids": [], "asks": []})
+    assert snap.tick_size is None
+    assert snap.min_order_size is None
+    assert snap.neg_risk is None

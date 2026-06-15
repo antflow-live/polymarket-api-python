@@ -25,6 +25,7 @@ Note the **dual-tier** trading limits: a short burst window *and* a longer susta
 ## Handle the throttle gracefully
 
 - **Back off and retry** on `429` and transient errors with exponential backoff — don't hammer. (The WebSocket client already backs off on reconnect.)
+- **Survive the weekly restart.** Polymarket restarts the CLOB roughly once a week (historically early Tuesday, US-Eastern). Around it, requests can briefly return `425 Too Early` — treat it like `429`: back off and retry, don't crash.
 - **Make retries idempotent.** Use a deterministic [client order id](cancel-and-replace.md) so a retried `POST /order` can't double-fill.
 - **Fail safe, not open.** When data is stale or a call fails, the correct default is usually to *do nothing*, not to guess. A trader that fails open places orders on bad data.
 

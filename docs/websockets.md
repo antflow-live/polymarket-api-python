@@ -64,8 +64,10 @@ client = ClobWebSocketClient(
 - **Send your own PING.** The CLOB market channel expects a periodic application-level `PING` (the client sends it for you on `ping_interval`); plain TCP keepalive isn't enough. `PONG` replies are filtered out before your handler sees them.
 - **A socket can look "open" after the feed dies.** The stale watchdog force-reconnects if no message arrives within `stale_timeout`. Don't rely on the connection raising an error on its own.
 - **Re-round quotes on `TickSizeChange`.** Polymarket tightens the tick near the 0/1 bounds (e.g. `0.01 → 0.001`). A resting order priced on the old tick can be rejected as off-tick when you next reprice it.
-- **Subscriptions are capped per connection.** Above `max_tokens_per_connection` (default 500) the list is truncated; shard across multiple clients for very large baskets.
+- **Subscriptions are capped per connection.** Above `max_tokens_per_connection` (default 500) the list is truncated (and a warning is logged); shard across multiple clients for very large baskets.
 - **Reconnect = re-snapshot.** After a reconnect you get fresh `BookUpdate` snapshots. Rebuild local state from those rather than assuming your pre-drop view is still valid.
+- **`last_trade_price` can print the complement leg.** On a binary market the feed has been observed to report a trade for the YES↔NO *mirror* token — the tell is `your_price + printed_price ≈ 1.0`. The stream is fine for market data, but don't use `LastTradePrice` to infer *your own* fills; trust the exchange's order/fill records for that, and reject any event whose price sums to ~1.0 against your order.
+- **Handler errors are isolated, not fatal.** If your `on_event` raises, the client logs it and keeps the connection alive — one bad event shouldn't drop a live feed. Disconnects, reconnects, and handler errors are emitted via the standard `logging` module under the `polymarket_api.ws` logger; call `logging.basicConfig(level=logging.INFO)` to see them.
 
 ---
 

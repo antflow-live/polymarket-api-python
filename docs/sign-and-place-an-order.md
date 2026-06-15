@@ -73,6 +73,8 @@ Either way, **size against visible depth** (`book.bid_depth_5pct` / `ask_depth_5
 
 - **`price` must sit on the tick.** Pass the market's current `tick_size` (often `"0.01"`, but it tightens near the 0/1 bounds). An off-tick price is rejected. Round your price to the tick.
 - **Negative-risk markets settle on a different exchange contract.** For `market.neg_risk == True`, the client needs to know it's a neg-risk order; check `py_clob_client_v2`'s order options for the `neg_risk` flag rather than assuming the binary path.
+- **Respect the minimum order size.** The CLOB rejects orders below a per-market floor. The `/book` response carries it — read `fetch_order_book(token_id).min_order_size` (commonly a few shares / ~$1 notional) and size above it.
+- **A marketable BUY is notional-capped and can overfill.** A market/FOK *buy* caps the dollars you spend, not the shares you get: if it fills better than the touch, you receive *more* shares than the nominal size. Don't assume requested size == filled size — read the response back and reconcile against your position.
 - **Make retries idempotent.** A network blip can hide a success. Use a deterministic [client order id](cancel-and-replace.md) so a retry can't double-fill.
 - **This is not financial advice.** This page shows the mechanics of the API, not what to trade. Outcomes are your responsibility.
 

@@ -37,6 +37,8 @@ total resting liquidity: bid 18044.0  ask 15992.0
 | `bid_depth_5pct` / `ask_depth_5pct` | Total resting size within 5% of mid — a quick read on how much you can trade near the touch |
 | `total_bid_liquidity` / `total_ask_liquidity` | Sum of all resting size on each side |
 | `bids` / `asks` | The top 10 levels, sorted (bids high→low, asks low→high) |
+| `tick_size` / `min_order_size` | The market's minimum price increment and smallest accepted order — read both before placing an order |
+| `neg_risk` | Whether this is a negative-risk (multi-outcome) market, which routes to a different exchange contract |
 
 ## Reuse a connection for many tokens
 

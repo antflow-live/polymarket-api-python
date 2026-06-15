@@ -55,6 +55,8 @@ coid = build_client_order_id("my-strategy", token_id, retry=0)
 - **Reconcile after any disconnect.** After a dropped connection, your local view of open orders may be wrong. Pull current orders/positions from the exchange before acting again, rather than trusting stale local state.
 - **Don't churn the book.** Each reprice is a cancel + a place, both of which count against the [rate limit](rate-limits.md). Reprice on a meaningful move (or a timer), not on every tick.
 - **A new id is a new order.** Reusing the same client order id intentionally is what makes a retry safe; reusing it *unintentionally* for a different order can get the second one ignored. Make the inputs uniquely identify the attempt.
+- **Submit first, then persist.** Resolve "did my order land?" by querying the exchange for your client order id, not by trusting a local row you wrote before the POST was acked — a crash mid-submit otherwise leaves a ghost order. Record the order (or reconcile your store) only after the exchange acknowledges it.
+- **A reset retry counter can collide after a restart.** If you derive the id from a counter that resets when your process restarts, a regenerated id can match a *stale, partially-filled* order from before the restart and dedup into it — reading back as a phantom fill. When you can't guarantee a monotonic attempt counter across restarts, mix a per-process-run nonce into the inputs so a fresh run can't collide with an old order.
 
 ---
 

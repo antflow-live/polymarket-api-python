@@ -42,6 +42,14 @@ def _level_size(level: Any) -> float:
     return 0.0
 
 
+def _opt_float(value: Any) -> float | None:
+    """Coerce to float, or ``None`` for missing/unparseable values."""
+    try:
+        return float(value) if value is not None else None
+    except (TypeError, ValueError):
+        return None
+
+
 @dataclass
 class OrderBookSnapshot:
     """Point-in-time order book summary for one CLOB token.
@@ -51,6 +59,11 @@ class OrderBookSnapshot:
     within 5% of mid on each side — a quick read on how much you could trade
     near the touch without walking the book. ``bids`` / ``asks`` hold the top 10
     levels (bids price-descending, asks price-ascending).
+
+    ``tick_size`` (minimum price increment), ``min_order_size`` (smallest order
+    the CLOB accepts for this token), and ``neg_risk`` come straight from the
+    ``/book`` response — you need the first two to place a *valid* order, and
+    ``neg_risk`` to route it to the right exchange contract.
     """
 
     token_id: str
@@ -71,6 +84,10 @@ class OrderBookSnapshot:
     bid_levels: int = 0
     ask_levels: int = 0
 
+    tick_size: str | None = None
+    min_order_size: float | None = None
+    neg_risk: bool | None = None
+
     bids: list[dict] = field(default_factory=list)
     asks: list[dict] = field(default_factory=list)
 
@@ -90,6 +107,9 @@ class OrderBookSnapshot:
             "total_ask_liquidity": self.total_ask_liquidity,
             "bid_levels": self.bid_levels,
             "ask_levels": self.ask_levels,
+            "tick_size": self.tick_size,
+            "min_order_size": self.min_order_size,
+            "neg_risk": self.neg_risk,
         }
 
 
@@ -140,6 +160,9 @@ def parse_order_book(token_id: str, raw: dict) -> OrderBookSnapshot:
         total_ask_liquidity=round(sum(a["size"] for a in asks), 2),
         bid_levels=len(bids),
         ask_levels=len(asks),
+        tick_size=(str(raw["tick_size"]) if raw.get("tick_size") is not None else None),
+        min_order_size=_opt_float(raw.get("min_order_size")),
+        neg_risk=(bool(raw["neg_risk"]) if raw.get("neg_risk") is not None else None),
         bids=bids[:10],
         asks=asks[:10],
     )
